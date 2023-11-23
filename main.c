@@ -6,10 +6,30 @@
 #include <string.h>
 #include <unistd.h>
 
-const char *SUPPORTED_FORMATS[] = {
-    "avif", "dz",  "fits", "gif",    "heif",      "input", "jpeg",
-    "jpg",  "jp2", "jxl",  "magick", "openslide", "pdf",   "png",
-    "ppm",  "raw", "svg",  "tiff",   "tif",       "v",     "webp"};
+const enum SUPPORTED_IMAGE_FORMATS {
+  avif,
+  dz,
+  fits,
+  gif,
+  heif,
+  input,
+  jpeg,
+  jpg,
+  jp2,
+  jxl,
+  magick,
+  openslide,
+  pdf,
+  png,
+  ppm,
+  raw,
+  svg,
+  tiff,
+  tif,
+  v,
+  webp
+};
+const enum RECOGNIZED_FILES { html, css, scss, ts, js, tsx, jsx };
 
 struct InputParameters {
   char workspaceDir[1000];
