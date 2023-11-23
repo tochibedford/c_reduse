@@ -6,6 +6,11 @@
 #include <string.h>
 #include <unistd.h>
 
+const char *SUPPORTED_FORMATS[] = {
+    "avif", "dz",  "fits", "gif",    "heif",      "input", "jpeg",
+    "jpg",  "jp2", "jxl",  "magick", "openslide", "pdf",   "png",
+    "ppm",  "raw", "svg",  "tiff",   "tif",       "v",     "webp"};
+
 struct InputParameters {
   char workspaceDir[1000];
   char format[5];
