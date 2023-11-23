@@ -29,7 +29,13 @@ enum SUPPORTED_IMAGE_FORMATS {
   v,
   webp
 };
-enum RECOGNIZED_FILES { html, css, scss, ts, js, tsx, jsx };
+const char *SUPPORTED_IMAGE_FORMATS_STRINGS[] = {
+    "avif", "dz",  "fits", "gif",    "heif",      "input", "jpeg",
+    "jpg",  "jp2", "jxl",  "magick", "openslide", "pdf",   "png",
+    "ppm",  "raw", "svg",  "tiff",   "tif",       "v",     "webp"};
+enum SUPPORTED_FILES { html, css, scss, ts, js, tsx, jsx };
+const char *SUPPORTED_FILES_STRINGS[] = {"html", "css", "scss", "ts",
+                                         "js",   "tsx", "jsx"};
 
 struct InputParameters {
   char workspaceDir[1000];
@@ -82,10 +88,30 @@ bool confirmDirectory(char *workspaceDir) {
   }
 }
 
-int main(int argc, char *argv[]) {
-  DIR *directory = opendir(".");
+char **listRelevantFiles(char *directory, const char *fileExtensions[]) {
+  DIR *dirStream = opendir(directory);
   struct dirent *entry;
 
+  if (directory == NULL) {
+    printf("Error opening directory %s\n", strerror(errno));
+    return false;
+  }
+
+  while ((entry = readdir(dirStream)) != NULL) {
+    if (entry->d_type == DT_REG) {
+      printf("File: %s\n", entry->d_name);
+    } else if (entry->d_type == DT_DIR) {
+      printf("Folder: %s\n", entry->d_name);
+    }
+  }
+
+  if (closedir(dirStream) == -1) {
+    printf("Error,Closing directory. \n");
+    return NULL;
+  }
+}
+
+int main(int argc, char *argv[]) {
   struct InputParameters cmdLineResults = getCommandLineArguments(argc, argv);
 
   printf("Starting Reduse using the following options: \n\n");
@@ -98,6 +124,8 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Error: %s\n", strerror(errno));
     exit(EXIT_FAILURE);
   }
+
+  listRelevantFiles(cmdLineResults.workspaceDir, SUPPORTED_FILES_STRINGS);
 
   return 0;
 }

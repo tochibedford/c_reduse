@@ -4,6 +4,10 @@
     "dirent.h": "c",
     "string.h": "c",
     "cstdlib": "c",
-    "stdlib.h": "c"
+    "stdlib.h": "c",
+    "unistd.h": "c",
+    "stdio.h": "c",
+    "stdbool.h": "c",
+    "limits.h": "c"
   }
 }
