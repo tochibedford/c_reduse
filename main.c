@@ -6,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
-const enum SUPPORTED_IMAGE_FORMATS {
+enum SUPPORTED_IMAGE_FORMATS {
   avif,
   dz,
   fits,
@@ -29,7 +29,7 @@ const enum SUPPORTED_IMAGE_FORMATS {
   v,
   webp
 };
-const enum RECOGNIZED_FILES { html, css, scss, ts, js, tsx, jsx };
+enum RECOGNIZED_FILES { html, css, scss, ts, js, tsx, jsx };
 
 struct InputParameters {
   char workspaceDir[1000];
@@ -72,6 +72,16 @@ struct InputParameters getCommandLineArguments(int argc, char *argv[]) {
   return results;
 }
 
+bool confirmDirectory(char *workspaceDir) {
+  DIR *dir = opendir(workspaceDir);
+  if (dir) {
+    closedir(dir);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 int main(int argc, char *argv[]) {
   DIR *directory = opendir(".");
   struct dirent *entry;
@@ -82,5 +92,12 @@ int main(int argc, char *argv[]) {
   printf("Workspace Directory: %s\n", cmdLineResults.workspaceDir);
   printf("Format: %s\n", cmdLineResults.format);
   printf("Fix Imports: %s\n", cmdLineResults.fixImports ? "true" : "false");
+  printf("\n");
+
+  if (!confirmDirectory(cmdLineResults.workspaceDir)) {
+    fprintf(stderr, "Error: %s\n", strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+
   return 0;
 }

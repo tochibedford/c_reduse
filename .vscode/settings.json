@@ -3,6 +3,7 @@
     "*html": "html",
     "dirent.h": "c",
     "string.h": "c",
-    "cstdlib": "c"
+    "cstdlib": "c",
+    "stdlib.h": "c"
   }
 }
