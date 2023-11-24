@@ -47,6 +47,20 @@ void printUsage() {
   printf("Usage: program.exe [workspaceDir] -f <format> -i\n");
 }
 
+char *concatenateStrings(const char *str1, const char *str2) {
+  size_t len1 = strlen(str1);
+  size_t len2 = strlen(str2);
+  size_t totalLength = len1 + len2 + 1;
+  char *result = (char *)malloc(totalLength);
+
+  if (result != NULL) {
+    strcpy(result, str1);
+    strcat(result, str2);
+  }
+
+  return result;
+}
+
 struct InputParameters getCommandLineArguments(int argc, char *argv[]) {
   char opt;
   struct InputParameters results = {".", "webp", false};
@@ -88,9 +102,18 @@ bool confirmDirectory(char *workspaceDir) {
   }
 }
 
-char **listRelevantFiles(char *directory, const char *fileExtensions[]) {
+char **listRelevantFiles(char *directory, const char *fileExtensions[],
+                         size_t *length) {
   DIR *dirStream = opendir(directory);
   struct dirent *entry;
+  size_t stackSize = 10;
+  char **dirStack = calloc(stackSize, sizeof(char *));
+  size_t currIndex = 0;
+
+  if (dirStack == NULL) {
+    fprintf(stderr, "Not enough memory");
+    return NULL;
+  }
 
   if (directory == NULL) {
     printf("Error opening directory %s\n", strerror(errno));
@@ -98,17 +121,26 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[]) {
   }
 
   while ((entry = readdir(dirStream)) != NULL) {
+    dirStack[currIndex] = concatenateStrings(directory, entry->d_name);
     if (entry->d_type == DT_REG) {
       printf("File: %s\n", entry->d_name);
     } else if (entry->d_type == DT_DIR) {
       printf("Folder: %s\n", entry->d_name);
     }
+    if (currIndex == stackSize - 1) {
+      stackSize += 1;
+      dirStack = realloc(dirStack, stackSize * sizeof(char *));
+    }
+    currIndex += 1;
+    *length = currIndex;
   }
 
   if (closedir(dirStream) == -1) {
     printf("Error,Closing directory. \n");
     return NULL;
   }
+
+  return dirStack;
 }
 
 int main(int argc, char *argv[]) {
@@ -125,7 +157,24 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  listRelevantFiles(cmdLineResults.workspaceDir, SUPPORTED_FILES_STRINGS);
+  size_t length = 0;
+  char **dirStack = listRelevantFiles(cmdLineResults.workspaceDir,
+                                      SUPPORTED_FILES_STRINGS, &length);
+
+  if (dirStack != NULL) {
+    printf("Array length: %zu\n", length);
+
+    for (size_t i = 0; i < length; i++) {
+      printf("File %zu: %s\n", i, dirStack[i]);
+      free(dirStack[i]);
+    }
+
+    free(dirStack);
+  }
+
+  if (dirStack == NULL) {
+    exit(EXIT_FAILURE);
+  }
 
   return 0;
 }
