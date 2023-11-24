@@ -68,7 +68,6 @@ void *concatenateArrays(const void *arr1, size_t len1, const void *arr2,
       dest[i] = src2[i];
     }
   }
-
   return result;
 }
 
@@ -131,7 +130,7 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
                          size_t *length) {
   DIR *dirStream = opendir(directory);
   struct dirent *entry;
-  size_t stackSize = 10;
+  size_t stackSize = 1;
   char **dirStack = calloc(stackSize, sizeof(char *));
   size_t currIndex = 0;
 
@@ -142,28 +141,47 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
 
   if (directory == NULL) {
     printf("Error opening directory %s\n", strerror(errno));
+    printf("Error opening %s", directory);
     return false;
   }
 
   while ((entry = readdir(dirStream)) != NULL) {
-    dirStack[currIndex] = concatenateStrings(directory, entry->d_name);
+    char *currPath =
+        concatenateStrings(directory, concatenateStrings("\\", entry->d_name));
     if (entry->d_type == DT_REG) {
+      dirStack[currIndex] = currPath;
       printf("File: %s\n", entry->d_name);
-    } else if (entry->d_type == DT_DIR) {
+
+      if (currIndex == stackSize - 1) {
+        stackSize += 1;
+        dirStack = realloc(dirStack, stackSize * sizeof(char *));
+      }
+      currIndex += 1;
+      *length = currIndex;  // length should equal the index after incrementing
+
+    } else if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") &&
+               strcmp(entry->d_name, "..") && strcmp(entry->d_name, ".git")) {
       printf("Folder: %s\n", entry->d_name);
+      size_t childLength;
+      char **childDirStack =
+          listRelevantFiles(currPath, fileExtensions, &childLength);
+
+      size_t resultLength;
+      dirStack = concatenateArrays(dirStack, *length, childDirStack,
+                                   childLength, sizeof(char *), &resultLength);
+      printf("%zu + %zu = %zu\n", *length, childLength, resultLength);
+      for (size_t i = 0; i < resultLength; i++) {
+        printf("ConcatenatedStack %zu: %s\n", i, dirStack[i]);
+      }
+      *length = resultLength;
     }
-    if (currIndex == stackSize - 1) {
-      stackSize += 1;
-      dirStack = realloc(dirStack, stackSize * sizeof(char *));
-    }
-    currIndex += 1;
-    *length = currIndex;
   }
 
-  if (closedir(dirStream) == -1) {
-    printf("Error,Closing directory. \n");
-    return NULL;
-  }
+  // if (closedir(dirStream) == -1) {
+  //   printf("Error,Closing directory. \n");
+  //   printf("Error closing %s\n", directory);
+  //   return NULL;
+  // }
 
   return dirStack;
 }
@@ -182,7 +200,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  size_t length = 0;
+  size_t length;
   char **dirStack = listRelevantFiles(cmdLineResults.workspaceDir,
                                       SUPPORTED_FILES_STRINGS, &length);
 
