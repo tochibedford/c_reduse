@@ -47,6 +47,31 @@ void printUsage() {
   printf("Usage: program.exe [workspaceDir] -f <format> -i\n");
 }
 
+void *concatenateArrays(const void *arr1, size_t len1, const void *arr2,
+                        size_t len2, size_t elementSize, size_t *resultLen) {
+  *resultLen = len1 + len2;
+
+  void *result = malloc((*resultLen) * elementSize);
+
+  if (result != NULL) {
+    const char *src1 = (const char *)arr1;
+    char *dest = (char *)result;
+
+    for (size_t i = 0; i < len1 * elementSize; ++i) {
+      dest[i] = src1[i];
+    }
+
+    const char *src2 = (const char *)arr2;
+    dest += len1 * elementSize;
+
+    for (size_t i = 0; i < len2 * elementSize; ++i) {
+      dest[i] = src2[i];
+    }
+  }
+
+  return result;
+}
+
 char *concatenateStrings(const char *str1, const char *str2) {
   size_t len1 = strlen(str1);
   size_t len2 = strlen(str2);
