@@ -9,7 +9,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${fileDirname}\\main.exe",
-      "args": [],
+      "args": ["C:\\Users\\user\\Documents\\PRog\\C\\c_reduse"],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
       "environment": [],
@@ -22,8 +22,8 @@
           "text": "-enable-pretty-printing",
           "ignoreFailures": true
         }
-      ]
+      ],
+      "preLaunchTask": "cbuild"
     }
-  ],
-  "preLaunchTask": "C/C++: gcc.exe build active file"
+  ]
 }

@@ -150,18 +150,18 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
         concatenateStrings(directory, concatenateStrings("\\", entry->d_name));
     if (entry->d_type == DT_REG) {
       dirStack[currIndex] = currPath;
-      printf("File: %s\n", entry->d_name);
+      // printf("File: %s\n", entry->d_name);
       if (currIndex == stackSize - 1) {
         stackSize += 1;
         dirStack = realloc(dirStack, stackSize * sizeof(char *));
       }
 
       currIndex += 1;
-      *length = currIndex;  // length should equal the index after incrementing
+      *length = currIndex;
 
     } else if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") &&
-               strcmp(entry->d_name, "..") && strcmp(entry->d_name, ".git")) {
-      printf("Folder: %s\n", entry->d_name);
+               strcmp(entry->d_name, "..")) {
+      // printf("Folder: %s\n", entry->d_name);
       size_t childLength;
       char **childDirStack =
           listRelevantFiles(currPath, fileExtensions, &childLength);
@@ -169,9 +169,9 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
       size_t resultLength;
       dirStack = concatenateArrays(dirStack, *length, childDirStack,
                                    childLength, sizeof(char *), &resultLength);
-      printf("%zu + %zu = %zu\n", *length, childLength, resultLength);
+      // printf("%zu + %zu = %zu\n", *length, childLength, resultLength);
       for (size_t i = 0; i < resultLength; i++) {
-        printf("ConcatenatedStack %zu: %s\n", i, dirStack[i]);
+        // printf("ConcatenatedStack %zu: %s\n", i, dirStack[i]);
       }
       *length = resultLength;
       stackSize = resultLength;
@@ -203,6 +203,7 @@ int main(int argc, char *argv[]) {
   }
 
   size_t length;
+  printf("length %zu\n", length);
   char **dirStack = listRelevantFiles(cmdLineResults.workspaceDir,
                                       SUPPORTED_FILES_STRINGS, &length);
 
