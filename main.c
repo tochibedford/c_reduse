@@ -151,11 +151,11 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
     if (entry->d_type == DT_REG) {
       dirStack[currIndex] = currPath;
       printf("File: %s\n", entry->d_name);
-
       if (currIndex == stackSize - 1) {
         stackSize += 1;
         dirStack = realloc(dirStack, stackSize * sizeof(char *));
       }
+
       currIndex += 1;
       *length = currIndex;  // length should equal the index after incrementing
 
@@ -174,14 +174,16 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
         printf("ConcatenatedStack %zu: %s\n", i, dirStack[i]);
       }
       *length = resultLength;
+      stackSize = resultLength;
+      currIndex = resultLength;
     }
   }
 
-  // if (closedir(dirStream) == -1) {
-  //   printf("Error,Closing directory. \n");
-  //   printf("Error closing %s\n", directory);
-  //   return NULL;
-  // }
+  if (closedir(dirStream) == -1) {
+    printf("Error,Closing directory. \n");
+    printf("Error closing %s\n", directory);
+    return NULL;
+  }
 
   return dirStack;
 }
