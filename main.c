@@ -150,7 +150,7 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
         concatenateStrings(directory, concatenateStrings("\\", entry->d_name));
     if (entry->d_type == DT_REG) {
       dirStack[currIndex] = currPath;
-      // printf("File: %s\n", entry->d_name);
+      printf("File: %s\n", entry->d_name);
       if (currIndex == stackSize - 1) {
         stackSize += 1;
         dirStack = realloc(dirStack, stackSize * sizeof(char *));
@@ -159,20 +159,20 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
       currIndex += 1;
       *length = currIndex;
 
-    } else if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") &&
-               strcmp(entry->d_name, "..")) {
-      // printf("Folder: %s\n", entry->d_name);
-      size_t childLength;
+    } else if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") != 0 &&
+               strcmp(entry->d_name, "..") != 0) {
+      printf("Folder: %s\n", entry->d_name);
+      size_t childLength = 0;
       char **childDirStack =
           listRelevantFiles(currPath, fileExtensions, &childLength);
 
-      size_t resultLength;
+      size_t resultLength = 0;
       dirStack = concatenateArrays(dirStack, *length, childDirStack,
                                    childLength, sizeof(char *), &resultLength);
       // printf("%zu + %zu = %zu\n", *length, childLength, resultLength);
-      for (size_t i = 0; i < resultLength; i++) {
-        // printf("ConcatenatedStack %zu: %s\n", i, dirStack[i]);
-      }
+      // for (size_t i = 0; i < resultLength; i++) {
+      //   printf("ConcatenatedStack %zu: %s\n", i, dirStack[i]);
+      // }
       *length = resultLength;
       stackSize = resultLength;
       currIndex = resultLength;
@@ -185,6 +185,13 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
     return NULL;
   }
 
+  // if (dirStack != NULL) {
+  //   printf("Array length: %zu\n", *length);
+
+  //   for (size_t i = 0; i < *length; i++) {
+  //     printf("File %zu: %s\n", i, dirStack[i]);
+  //   }
+  // }
   return dirStack;
 }
 
@@ -202,8 +209,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  size_t length;
-  printf("length %zu\n", length);
+  size_t length = 0;
   char **dirStack = listRelevantFiles(cmdLineResults.workspaceDir,
                                       SUPPORTED_FILES_STRINGS, &length);
 
