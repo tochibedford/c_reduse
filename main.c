@@ -71,20 +71,6 @@ void *concatenateArrays(const void *arr1, size_t len1, const void *arr2,
   return result;
 }
 
-char *concatenateStrings(const char *str1, const char *str2) {
-  size_t len1 = strlen(str1);
-  size_t len2 = strlen(str2);
-  size_t totalLength = len1 + len2 + 1;
-  char *result = (char *)malloc(totalLength);
-
-  if (result != NULL) {
-    strcpy(result, str1);
-    strcat(result, str2);
-  }
-
-  return result;
-}
-
 struct InputParameters getCommandLineArguments(int argc, char *argv[]) {
   char opt;
   struct InputParameters results = {".", "webp", false};
@@ -126,56 +112,49 @@ bool confirmDirectory(char *workspaceDir) {
   }
 }
 
-char **listRelevantFiles(char *directory, const char *fileExtensions[],
-                         size_t *length) {
+typedef struct dir_stack {
+  char **directories;
+  size_t capacity;
+  size_t length;
+} dir_stack;
+
+void **listRelevantFiles(char *directory, const char *fileExtensions[],
+                         dir_stack *dirStack) {
   DIR *dirStream = opendir(directory);
   struct dirent *entry;
-  size_t stackSize = 1;
-  char **dirStack = calloc(stackSize, sizeof(char *));
-  size_t currIndex = 0;
 
-  if (dirStack == NULL) {
-    fprintf(stderr, "Not enough memory");
+  if (dirStream == NULL) {
+    printf("Error opening directory %s\n", strerror(errno));
+    printf("Error opening %s", directory);
     return NULL;
   }
 
-  if (directory == NULL) {
-    printf("Error opening directory %s\n", strerror(errno));
-    printf("Error opening %s", directory);
-    return false;
-  }
-
   while ((entry = readdir(dirStream)) != NULL) {
-    char *currPath =
-        concatenateStrings(directory, concatenateStrings("\\", entry->d_name));
+    char *currPath = malloc(strlen(directory) + 1 + strlen(entry->d_name) + 1);
+    if (currPath == NULL) {
+      perror("Error allocating memory");
+      break;
+    }
+
+    sprintf(currPath, "%s\\%s", directory, entry->d_name);
     if (entry->d_type == DT_REG) {
-      dirStack[currIndex] = currPath;
-      printf("File: %s\n", entry->d_name);
-      if (currIndex == stackSize - 1) {
-        stackSize += 1;
-        dirStack = realloc(dirStack, stackSize * sizeof(char *));
+      if (dirStack->length == dirStack->capacity) {
+        dirStack->capacity += 10;
+        dirStack->directories =
+            realloc(dirStack->directories, dirStack->capacity * sizeof(char *));
+        if (dirStack->directories == NULL) {
+          perror("Error reallocating memory");
+          break;  // Exit the loop on memory reallocation failure
+        }
       }
-
-      currIndex += 1;
-      *length = currIndex;
-
+      dirStack->directories[dirStack->length] = currPath;
+      dirStack->length++;
     } else if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") != 0 &&
                strcmp(entry->d_name, "..") != 0) {
-      printf("Folder: %s\n", entry->d_name);
-      size_t childLength = 0;
-      char **childDirStack =
-          listRelevantFiles(currPath, fileExtensions, &childLength);
-
-      size_t resultLength = 0;
-      dirStack = concatenateArrays(dirStack, *length, childDirStack,
-                                   childLength, sizeof(char *), &resultLength);
-      // printf("%zu + %zu = %zu\n", *length, childLength, resultLength);
-      // for (size_t i = 0; i < resultLength; i++) {
-      //   printf("ConcatenatedStack %zu: %s\n", i, dirStack[i]);
-      // }
-      *length = resultLength;
-      stackSize = resultLength;
-      currIndex = resultLength;
+      listRelevantFiles(currPath, fileExtensions, dirStack);
+      free(currPath);
+    } else {
+      free(currPath);
     }
   }
 
@@ -184,15 +163,6 @@ char **listRelevantFiles(char *directory, const char *fileExtensions[],
     printf("Error closing %s\n", directory);
     return NULL;
   }
-
-  // if (dirStack != NULL) {
-  //   printf("Array length: %zu\n", *length);
-
-  //   for (size_t i = 0; i < *length; i++) {
-  //     printf("File %zu: %s\n", i, dirStack[i]);
-  //   }
-  // }
-  return dirStack;
 }
 
 int main(int argc, char *argv[]) {
@@ -209,22 +179,28 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  size_t length = 0;
-  char **dirStack = listRelevantFiles(cmdLineResults.workspaceDir,
-                                      SUPPORTED_FILES_STRINGS, &length);
+  dir_stack dirStack;
+  dirStack.capacity = 10;
+  dirStack.directories = (char **)calloc(dirStack.capacity, sizeof(char *));
+  dirStack.length = 0;
 
-  if (dirStack != NULL) {
-    printf("Array length: %zu\n", length);
+  listRelevantFiles(cmdLineResults.workspaceDir, SUPPORTED_FILES_STRINGS,
+                    &dirStack);
 
-    for (size_t i = 0; i < length; i++) {
-      printf("File %zu: %s\n", i, dirStack[i]);
-      free(dirStack[i]);
+  if (dirStack.directories != NULL) {
+    printf("Array length: %zu\n", dirStack.length);
+
+    for (size_t i = 0; i < dirStack.length; i++) {
+      printf("File %zu: %s\n", i, dirStack.directories[i]);
+      free(dirStack.directories[i]);
     }
 
-    free(dirStack);
+    free(dirStack.directories);
+  } else {
+    fprintf(stderr, "Memory allocation failed\n");
   }
 
-  if (dirStack == NULL) {
+  if (dirStack.directories == NULL) {
     exit(EXIT_FAILURE);
   }
 
