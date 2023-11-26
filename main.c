@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <locale.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,6 +59,46 @@ bool isAbsolutePath(const char *path) {
   return false;
 }
 
+char *normalizePath(char *path) {
+  char *currCharPtr = path;
+  char *result = (char *)malloc(PATH_MAX);
+  char *outCurrCharPtr = result;
+
+  while (*currCharPtr != '\0') {
+    if (*currCharPtr == '.') {
+      char *lookAhead = currCharPtr;
+      lookAhead++;
+      if (*lookAhead == '\\' || *lookAhead == '/') {
+        currCharPtr += 1;
+      } else if (*lookAhead == '.' &&
+                 (lookAhead[1] == '\\' || lookAhead[1] == '/' ||
+                  lookAhead[1] == '\0')) {
+        currCharPtr += 2;
+        // remove immediate slash then go back tll next slash
+        outCurrCharPtr--;
+        *outCurrCharPtr = 0;
+        outCurrCharPtr--;
+        while (outCurrCharPtr > result &&
+               (*outCurrCharPtr != '\\' && *outCurrCharPtr != '/')) {
+          *outCurrCharPtr = 0;
+          outCurrCharPtr--;
+        }
+        // set to next empty result slot and continue
+        outCurrCharPtr++;
+        // go back tll slash
+      } else {
+        *outCurrCharPtr = *currCharPtr;
+        outCurrCharPtr++;
+      }
+    } else {
+      *outCurrCharPtr = *currCharPtr;
+      outCurrCharPtr++;
+    }
+    currCharPtr++;
+  }
+  return result;
+}
+
 void printUsage(char *argv[]) {
   printf("Usage: %s [workspaceDir] -f <format> -i\n", argv[0]);
 }
@@ -107,8 +148,15 @@ struct InputParameters getCommandLineArguments(int argc, char *argv[]) {
 
   // get rid of trailing slash
   for (int i = optind; i < argc; ++i) {
-    if (strcmp(argv[i] + (strlen(argv[i]) - 1), "\\") == 0 ||
-        strcmp(argv[i] + (strlen(argv[i]) - 1), "/") == 0) {
+    if (*(argv[i]) == '\\' || *(argv[i]) == '/') {
+      if (strlen(argv[i]) == 1) {
+        strcpy(results.workspaceDir, "C:/");
+      } else {
+        strcpy(results.workspaceDir, "C:/");
+        strcat(results.workspaceDir, argv[i] + 1);
+      }
+    } else if (strcmp(argv[i] + (strlen(argv[i]) - 1), "\\") == 0 ||
+               strcmp(argv[i] + (strlen(argv[i]) - 1), "/") == 0) {
       strncpy(results.workspaceDir, argv[i], strlen(argv[i]) - 1);
     } else {
       strcpy(results.workspaceDir, argv[i]);
@@ -118,7 +166,10 @@ struct InputParameters getCommandLineArguments(int argc, char *argv[]) {
       // convert to absolute path
       char cwd[PATH_MAX];
       getcwd(cwd, PATH_MAX);
-      printf("%s\n", cwd);
+      sprintf(cwd, "%s/%s", cwd, results.workspaceDir);
+      char *newCwd = normalizePath(cwd);
+      strcpy(results.workspaceDir, newCwd);
+      free(newCwd);
     }
     break;
   }
@@ -153,7 +204,7 @@ void listRelevantFiles(char *directory, const char *fileExtensions[],
 
   if (dirStream == NULL) {
     printf("Error opening directory %s\n", strerror(errno));
-    printf("Error opening %s", directory);
+    printf("Error opening %s\n", directory);
     return;
   }
 
@@ -194,6 +245,7 @@ void listRelevantFiles(char *directory, const char *fileExtensions[],
 }
 
 int main(int argc, char *argv[]) {
+  setlocale(LC_ALL, "");
   struct InputParameters cmdLineResults = getCommandLineArguments(argc, argv);
 
   printf("Starting Reduse using the following options: \n\n");
