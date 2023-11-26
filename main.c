@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -5,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#define PATH_MAX 4096
 
 enum SUPPORTED_IMAGE_FORMATS {
   avif,
@@ -38,10 +41,22 @@ const char *SUPPORTED_FILES_STRINGS[] = {"html", "css", "scss", "ts",
                                          "js",   "tsx", "jsx"};
 
 struct InputParameters {
-  char workspaceDir[1000];
+  char workspaceDir[PATH_MAX];
   char format[5];
   bool fixImports;
 };
+
+bool isAbsolutePath(const char *path) {
+#ifdef _WIN32
+  // On Windows, check for a drive letter (e.g., "C:\")
+  if (isalpha(path[0]) && path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
+    return true;
+#else
+  // On Unix-like systems, check for a leading '/'
+  if (path[0] == '/') return true;
+#endif
+  return false;
+}
 
 void printUsage(char *argv[]) {
   printf("Usage: %s [workspaceDir] -f <format> -i\n", argv[0]);
@@ -97,6 +112,13 @@ struct InputParameters getCommandLineArguments(int argc, char *argv[]) {
       strncpy(results.workspaceDir, argv[i], strlen(argv[i]) - 1);
     } else {
       strcpy(results.workspaceDir, argv[i]);
+    }
+
+    if (isAbsolutePath(results.workspaceDir) == false) {
+      // convert to absolute path
+      char cwd[PATH_MAX];
+      getcwd(cwd, PATH_MAX);
+      printf("%s\n", cwd);
     }
     break;
   }
