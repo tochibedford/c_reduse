@@ -43,8 +43,8 @@ struct InputParameters {
   bool fixImports;
 };
 
-void printUsage() {
-  printf("Usage: program.exe [workspaceDir] -f <format> -i\n");
+void printUsage(char *argv[]) {
+  printf("Usage: %s [workspaceDir] -f <format> -i\n", argv[0]);
 }
 
 void *concatenateArrays(const void *arr1, size_t len1, const void *arr2,
@@ -90,13 +90,17 @@ struct InputParameters getCommandLineArguments(int argc, char *argv[]) {
     }
   }
 
+  // get rid of trailing slash
   for (int i = optind; i < argc; ++i) {
-    strcpy(results.workspaceDir, argv[i]);
+    if (strcmp(argv[i] + (strlen(argv[i]) - 1), "\\") == 0 ||
+        strcmp(argv[i] + (strlen(argv[i]) - 1), "/") == 0) {
+      strncpy(results.workspaceDir, argv[i], strlen(argv[i]) - 1);
+    }
     break;
   }
 
   if (invalidArgument) {
-    printUsage();
+    printUsage(argv);
     exit(EXIT_FAILURE);
   }
   return results;
@@ -118,15 +122,15 @@ typedef struct dir_stack {
   size_t length;
 } dir_stack;
 
-void **listRelevantFiles(char *directory, const char *fileExtensions[],
-                         dir_stack *dirStack) {
+void listRelevantFiles(char *directory, const char *fileExtensions[],
+                       dir_stack *dirStack) {
   DIR *dirStream = opendir(directory);
   struct dirent *entry;
 
   if (dirStream == NULL) {
     printf("Error opening directory %s\n", strerror(errno));
     printf("Error opening %s", directory);
-    return NULL;
+    return;
   }
 
   while ((entry = readdir(dirStream)) != NULL) {
@@ -136,7 +140,7 @@ void **listRelevantFiles(char *directory, const char *fileExtensions[],
       break;
     }
 
-    sprintf(currPath, "%s\\%s", directory, entry->d_name);
+    sprintf(currPath, "%s/%s", directory, entry->d_name);
     if (entry->d_type == DT_REG) {
       if (dirStack->length == dirStack->capacity) {
         dirStack->capacity += 10;
@@ -161,7 +165,7 @@ void **listRelevantFiles(char *directory, const char *fileExtensions[],
   if (closedir(dirStream) == -1) {
     printf("Error,Closing directory. \n");
     printf("Error closing %s\n", directory);
-    return NULL;
+    return;
   }
 }
 
@@ -194,11 +198,10 @@ int main(int argc, char *argv[]) {
       printf("File %zu: %s\n", i, dirStack.directories[i]);
       free(dirStack.directories[i]);
     }
-
-    free(dirStack.directories);
   } else {
     fprintf(stderr, "Memory allocation failed\n");
   }
+  free(dirStack.directories);
 
   if (dirStack.directories == NULL) {
     exit(EXIT_FAILURE);
