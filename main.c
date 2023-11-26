@@ -66,10 +66,13 @@ char *normalizePath(char *path) {
 
   while (*currCharPtr != '\0') {
     if (*currCharPtr == '.') {
-      char *lookAhead = currCharPtr;
-      lookAhead++;
-      if (*lookAhead == '\\' || *lookAhead == '/') {
-        currCharPtr += 1;
+      char *lookAhead = currCharPtr + 1;
+      if (*lookAhead == '\0') {
+        outCurrCharPtr--;
+        *outCurrCharPtr = 0;  // remove trailing slash if current dir ('.') is
+                              // last path component
+      } else if (*lookAhead == '\\' || *lookAhead == '/') {
+        currCharPtr++;
       } else if (*lookAhead == '.' &&
                  (lookAhead[1] == '\\' || lookAhead[1] == '/' ||
                   lookAhead[1] == '\0')) {
@@ -83,6 +86,14 @@ char *normalizePath(char *path) {
           *outCurrCharPtr = 0;
           outCurrCharPtr--;
         }
+
+        if ((*outCurrCharPtr == '\\' || *outCurrCharPtr == '/') &&
+            *currCharPtr == '\0') {
+          *outCurrCharPtr = 0;
+          outCurrCharPtr--;  // remove trailing slash if parent dir ('..') is
+                             // last path component
+        }
+
         // set to next empty result slot and continue
         outCurrCharPtr++;
         // go back tll slash
@@ -96,6 +107,7 @@ char *normalizePath(char *path) {
     }
     currCharPtr++;
   }
+  *outCurrCharPtr = '\0';
   return result;
 }
 
