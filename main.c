@@ -95,6 +95,8 @@ struct InputParameters getCommandLineArguments(int argc, char *argv[]) {
     if (strcmp(argv[i] + (strlen(argv[i]) - 1), "\\") == 0 ||
         strcmp(argv[i] + (strlen(argv[i]) - 1), "/") == 0) {
       strncpy(results.workspaceDir, argv[i], strlen(argv[i]) - 1);
+    } else {
+      strcpy(results.workspaceDir, argv[i]);
     }
     break;
   }
