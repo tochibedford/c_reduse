@@ -9,7 +9,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${fileDirname}\\main.exe",
-      "args": ["C:\\Users\\user\\Documents\\PRog\\C\\c_reduse"],
+      "args": ["C:\\Users\\user\\Documents\\PRog\\C\\c_reduse\\src"],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
       "environment": [],
